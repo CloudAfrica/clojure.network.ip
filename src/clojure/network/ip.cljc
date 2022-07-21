@@ -23,19 +23,23 @@
   (network-mask [this]))
 
 #?(:clj
-   (defn- to-ip-byte-array [number]
-     (let [number (if (instance? BigInteger number) number (biginteger number))
-           bytes     (seq (.toByteArray number))
-           ;; If there is a sign byte, remove it
-           bytes     (if (= (byte 0) (first bytes))
-                       (rest bytes)
-                       bytes)
-           byte-size (count bytes)
-           should-be (if (<= byte-size 4) 4 16)
-           ;; Fill in the byte array to the required size with empty bytes
-           bytes     (->> bytes
-                      (concat (take (- should-be byte-size) (repeat (byte 0))))
-                      byte-array)]
+   (defn dec-ip->byte-array [number]
+     {:pre [(>= number 0)]}
+     (let [number              (if (instance? BigInteger number) number (biginteger number))
+           bytes               (seq (.toByteArray number))
+           ;; If the sign bit overflows into an extra byte, remove it
+           byte-count          (count bytes)
+           bytes               (if (and (or (= byte-count 5)
+                                            (= byte-count 17))
+                                        (= (byte 0) (first bytes)))
+                                 (rest bytes)
+                                 bytes)
+           byte-count          (count bytes)
+           expected-byte-count (if (<= byte-count 4) 4 16)
+           ;; Fill in the byte array to the required size with zero bytes
+           bytes               (->> bytes
+                                    (concat (take (- expected-byte-count byte-count) (repeat (byte 0))))
+                                    byte-array)]
        bytes)))
 
 
@@ -96,7 +100,7 @@
     (extend-type BigInteger
         IPConstructor
         (make-ip-address [this]
-          (->IPAddress (to-ip-byte-array this))))
+          (->IPAddress (dec-ip->byte-array this))))
    :cljs
     (extend-type goog.math.Integer
       IPConstructor
@@ -107,7 +111,7 @@
     (extend-type clojure.lang.BigInt
       IPConstructor
       (make-ip-address [this]
-        (->IPAddress (to-ip-byte-array this))))
+        (->IPAddress (dec-ip->byte-array this))))
    :cljs
     (extend-type number
       IPConstructor
