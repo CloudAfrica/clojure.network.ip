@@ -2,6 +2,16 @@
   (:require [clojure.test :refer [deftest is testing]]
             [clojure.network.ip :as sut]))
 
+(deftest make-ip-address
+  (testing "make-ip-address can handle negative IPs"
+   (let [ip-str "192.168.0.1"]
+    (is (= ip-str
+           (-> ip-str
+               (sut/make-ip-address)
+               (sut/numeric-value)
+               (sut/make-ip-address)
+               (str)))))))
+
 (deftest dec-ip->byte-array
   (testing "Number is correctly converted to bytes for the lowest IPv4"
     (let [dec-ip 0]
