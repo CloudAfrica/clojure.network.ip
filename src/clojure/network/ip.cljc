@@ -24,7 +24,6 @@
 
 #?(:clj
    (defn dec-ip->byte-array [number]
-     {:pre [(>= number 0)]}
      (let [number              (if (instance? BigInteger number) number (biginteger number))
            bytes               (seq (.toByteArray number))
            ;; If the sign bit overflows into an extra byte, remove it
